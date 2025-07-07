@@ -1,0 +1,15 @@
+# .NET
+**/bin/
+**/obj/
+*.user
+*.suo
+*.cache
+*.log
+
+# ASP.NET Secrets
+**/Properties/launchSettings.json
+
+# Node (React)
+RbacClient/node_modules/
+RbacClient/build/
+RbacClient/.env
