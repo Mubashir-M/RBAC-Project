@@ -1,0 +1,44 @@
+.login-split-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+.left {
+  flex: 1;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+  background-color: #f2f2f2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 20%;
+  color: #333333;
+}
+
+.right {
+  flex: 1;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.left h1 {
+  font-size: 3rem;
+  margin-bottom: 10px;
+  color: #1a1a1a;
+  padding-left: 20%;
+}
+.left h3 {
+  font-size: 1.5em;
+  color: #444444;
+  text-align: center;
+  max-width: 80%;
+}
