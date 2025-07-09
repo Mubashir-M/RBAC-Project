@@ -5,6 +5,7 @@
 *.suo
 *.cache
 *.log
+.env
 
 # ASP.NET Secrets
 **/Properties/launchSettings.json
@@ -13,3 +14,4 @@
 RbacClient/node_modules/
 RbacClient/build/
 RbacClient/.env
+
