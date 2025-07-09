@@ -1,0 +1,13 @@
+.navbar {
+  border: 1px solid red;
+  margin: 0;
+  padding: 7px 0 7px 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.nav-link {
+  border: 1px solid blue;
+}
