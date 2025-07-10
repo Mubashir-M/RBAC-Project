@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RBacServer.Data;
 
@@ -10,9 +11,11 @@ using RBacServer.Data;
 namespace RBacServer.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250709161002_SeedInitialRBAC")]
+    partial class SeedInitialRBAC
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.6");
@@ -40,25 +43,21 @@ namespace RBacServer.Migrations
                         new
                         {
                             Id = 1,
-                            Description = "Access to create a user",
                             Name = "CreateUser"
                         },
                         new
                         {
                             Id = 2,
-                            Description = "Access to delete a user",
                             Name = "DeleteUser"
                         },
                         new
                         {
                             Id = 3,
-                            Description = "Access to view dashboard",
                             Name = "ViewDashboard"
                         },
                         new
                         {
                             Id = 4,
-                            Description = "Access to edit user",
                             Name = "EdiUser"
                         });
                 });
@@ -86,14 +85,12 @@ namespace RBacServer.Migrations
                         new
                         {
                             Id = 1,
-                            Description = "Administrator with full access",
                             name = "Admin"
                         },
                         new
                         {
                             Id = 2,
-                            Description = "Regular user with limited access",
-                            name = "User"
+                            name = "Manager"
                         });
                 });
 

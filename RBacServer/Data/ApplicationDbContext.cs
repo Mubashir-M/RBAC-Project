@@ -22,6 +22,8 @@ namespace RBacServer.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
         
+            base.OnModelCreating(modelBuilder);
+        
             // Configure UserRole Many-to-Many
             modelBuilder.Entity<UserRole>()
             .HasKey(ur => new { ur.UserId, ur.RoleId });
@@ -50,7 +52,29 @@ namespace RBacServer.Data
             .WithMany(p => p.RolePermissions)
             .HasForeignKey(rp => rp.PermissionId);
 
-            base.OnModelCreating(modelBuilder);
+
+            // Seed Roles
+            modelBuilder.Entity<Role>().HasData(
+                new Role { Id= 1, name = "Admin", Description = "Administrator with full access"},
+                new Role { Id= 2, name = "User",Description = "Regular user with limited access"}
+            );
+
+            // Seed Permissions
+            modelBuilder.Entity<Permission>().HasData(
+                new Permission {Id = 1, Name = "CreateUser", Description = "Access to create a user"},
+                new Permission {Id = 2, Name = "DeleteUser", Description = "Access to delete a user"},
+                new Permission {Id = 3, Name = "ViewDashboard", Description = "Access to view dashboard"},
+                new Permission {Id = 4, Name = "EdiUser", Description = "Access to edit user"}
+            );
+
+            // Seed RlePermissions (RoleId, PermissionId)
+            modelBuilder.Entity<RolePermission>().HasData(
+                new RolePermission {RoleId = 1, PermissionId = 1},
+                new RolePermission {RoleId = 1, PermissionId = 2},
+                new RolePermission {RoleId = 1, PermissionId = 3},
+                new RolePermission {RoleId = 1, PermissionId = 4},
+                new RolePermission {RoleId = 2, PermissionId = 4}
+            );
         }
     }
 }
