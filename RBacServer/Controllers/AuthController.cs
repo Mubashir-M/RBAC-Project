@@ -50,6 +50,23 @@ namespace RBacServer.Controllers
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
+
+            // Add entry to UserRole table
+            // Get default role (e.g., "User")
+            var defaultRole = await _context.Roles.FirstOrDefaultAsync(r => r.name == "User");
+            if (defaultRole == null)
+            {
+                return StatusCode(500, "Default role not found.");
+            }
+            var userRole = new UserRole
+            {
+                UserId = user.Id,
+                RoleId = defaultRole.Id
+            };
+
+            _context.UserRoles.Add(userRole);
+            await _context.SaveChangesAsync();
+            
             return Ok("User registered successfully.");
         }
 
