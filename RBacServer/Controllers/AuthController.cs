@@ -71,22 +71,49 @@ namespace RBacServer.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login(LoginDto dto)
+public async Task<IActionResult> Login(LoginDto dto)
+{
+    var user = await _context.Users
+        .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+                .ThenInclude(r => r.RolePermissions)
+                    .ThenInclude(rp => rp.Permission)
+        .FirstOrDefaultAsync(u => u.Username.ToLower() == dto.Username.ToLower());
+
+    if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+    {
+        Console.WriteLine($"[Login] User not found: {dto.Username}");
+        return Unauthorized("Invalid credentials.");
+    }
+
+    user.LastLoginDate = DateTime.UtcNow;
+    await _context.SaveChangesAsync();
+
+    var jwtToken = _tokenService.CreateToken(user);
+
+    return Ok(new
+    {
+        token = jwtToken,
+        user = new
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == dto.Username.ToLower());
-
-            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+            user.Id,
+            user.Username,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            Roles = user.UserRoles.Select(ur => new
             {
-                Console.WriteLine($"[Login] User not found: {dto.Username} and {user?.Username} and {user?.Username == dto.Username}");
-                return Unauthorized("Invalid credentials.");
-            }
-
-            user.LastLoginDate = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
-            var token = _tokenService.CreateToken(user);
-            
-            return Ok(new { token });
+                ur.Role.Id,
+                ur.Role.name,
+                Permissions = ur.Role.RolePermissions.Select(rp => new
+                {
+                    rp.Permission.Id,
+                    rp.Permission.Name
+                })
+            })
         }
+    });
+}
+
     }
 }

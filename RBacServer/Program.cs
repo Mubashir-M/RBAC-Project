@@ -16,7 +16,37 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddControllers(); // API controllers
 
 // Add Swagger
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "RBAC API", Version = "v1" });
+
+    // Define the security scheme for JWT Bearer tokens
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Please enter a valid token (e.g., 'Bearer YOUR_JWT_TOKEN')",
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        BearerFormat = "JWT",
+        Scheme = "Bearer" // The name of the authentication scheme
+    });
+
+    // Define the security requirement for API operations
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer" // Refers to the name defined above
+                }
+            },
+            Array.Empty<string>() // This means no specific scopes are required for this general auth
+        }
+    });
+});
 
 // Configure Entity Framework to use SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -31,7 +61,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins, policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://www.your-production-frontend.com")
+        policy.WithOrigins("http://localhost:5173", "http://www.your-production-frontend.com")
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials();
@@ -86,7 +116,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // Use CORS
-app.UseCors("MyAllowSpecificOrigins");
+app.UseCors(MyAllowSpecificOrigins);
 
 app.UseAuthentication();
 

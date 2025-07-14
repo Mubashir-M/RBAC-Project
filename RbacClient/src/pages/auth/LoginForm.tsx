@@ -1,22 +1,40 @@
 import React, { useState } from "react";
 import "./LoginForm.css";
+import api from "../../api/axios";
+import { setCredentials } from "../../features/userSlice";
+import { useDispatch } from "react-redux";
 
 interface LoginFormProps {
   onRegisterClick: () => void; // Function to call when "Register Now!" is clicked
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onRegisterClick }) => {
+  const dispatch = useDispatch();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (username === "user" && password === "password") {
-      alert("Login successful!"); // Replace with actual auth logic (e.g., redirect)
-    } else {
+    try {
+      const loginRes = await api.post("auth/login", {
+        username,
+        password,
+      });
+
+      const { token, user } = loginRes.data;
+
+      if (token && user) {
+        dispatch(setCredentials({ user, token }));
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
+        setUsername("");
+        setPassword("");
+      }
+    } catch (err) {
+      console.error("Login failed:", err);
       setError("Invalid username or password.");
     }
   };
@@ -24,7 +42,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onRegisterClick }) => {
   return (
     <div className="login-card">
       <h2 className="login-title">Log In</h2>
-      <form className="login-form" onSubmit={handleSubmit}>
+      <form className="login-form" onSubmit={handleLogin}>
         <div className="form-group">
           <input
             type="text"

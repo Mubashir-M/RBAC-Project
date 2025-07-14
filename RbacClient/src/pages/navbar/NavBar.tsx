@@ -1,13 +1,23 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import "./NavBar.css";
+import { useDispatch } from "react-redux";
+import { logout } from "../../features/userSlice";
 
 const NavBar: React.FC = () => {
+  const dispatch = useDispatch();
   // Temporary mock user object (replace later with API response)
   const user = {
     username: "Mikko",
     role: "Admin", // Try "User" or "Manager" for testing other roles
   };
+
+  const handleLogout = () => {
+    dispatch(logout());
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+  };
+
   return (
     <nav className="navbar">
       <Link to="/Home">Home</Link>
@@ -30,7 +40,7 @@ const NavBar: React.FC = () => {
         </>
       )}
       <Link to="/Home">Profile</Link>
-      <button>Logout</button>
+      <button onClick={handleLogout}>Logout</button>
     </nav>
   );
 };
