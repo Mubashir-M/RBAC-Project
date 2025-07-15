@@ -46,10 +46,17 @@ namespace RBacServer.Controllers
 
             var dto = new UserWithAccessDto
             {
+                UserId = user.Id,
                 Username = user.Username,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                Roles = user.UserRoles.Select(ur => ur.Role.name).ToList(),
+                Email = user.Email,
+                isActive = user.IsActive,
+                Roles = user.UserRoles.Select(ur => new RoleDto
+                {
+                    RoleId = ur.Role.Id,
+                    Name = ur.Role.name,
+                }).ToList(),
                 Permissions = user.UserRoles
                     .SelectMany(ur => ur.Role.RolePermissions)
                     .Select(rp => rp.Permission.Name)
@@ -58,6 +65,57 @@ namespace RBacServer.Controllers
             };
 
             return Ok(dto);
+        }
+
+        [HttpGet("users")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetUsers()
+        {
+            var users = await _context.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .ThenInclude(r => r.RolePermissions)
+                .ThenInclude(rp => rp.Permission)
+                .ToListAsync();
+
+            var userList = users.Select(user => new UserWithAccessDto
+            {
+                UserId = user.Id,
+                Username = user.Username,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                isActive = user.IsActive,
+                Roles = user.UserRoles.Select(ur => new RoleDto
+                {
+                    RoleId = ur.Role.Id,
+                    Name = ur.Role.name,
+                }).ToList(),
+                Permissions = user.UserRoles
+                    .SelectMany(ur => ur.Role.RolePermissions)
+                    .Select(rp => rp.Permission.Name)
+                    .Distinct()
+                    .ToList()
+            }).ToList();
+
+            return Ok(userList);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("users/{userId}/role")]
+        public async Task<IActionResult> UpdateUserRole(int userId, [FromBody] RoleDto dto)
+        {
+            var role = await _context.Roles.FindAsync(dto.RoleId);
+            if (role == null) return BadRequest(new { error = "Invalid roleId" });
+
+            var userRole = await _context.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == userId);
+            if (userRole != null) _context.UserRoles.Remove(userRole);
+
+            var newUserRole = new UserRole { UserId = userId, RoleId = dto.RoleId };
+            _context.UserRoles.Add(newUserRole);
+            await _context.SaveChangesAsync();
+
+            return Ok(new {message = "Role updated successfuly"});
         }
     }
 }

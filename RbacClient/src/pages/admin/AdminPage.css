@@ -1,0 +1,101 @@
+/* Admin Panel Styles */
+.admin-panel {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  flex: 1;
+  overflow-y: hidden;
+}
+
+.panel-title {
+  font-size: 2em;
+  margin-bottom: 20px;
+}
+
+.admin-name {
+  font-size: 1.5em;
+  margin-bottom: 20px;
+}
+
+.admin-name span {
+  font-weight: bold;
+}
+
+.overview {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 30px;
+}
+
+.card {
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  text-align: center;
+  width: 30%;
+}
+
+.card h3 {
+  margin-bottom: 10px;
+}
+
+.card p {
+  font-size: 1.5em;
+}
+
+.quick-links {
+  margin-bottom: 30px;
+}
+
+.quick-links h3 {
+  margin-bottom: 15px;
+}
+
+.quick-links ul {
+  list-style: none;
+  padding: 0;
+}
+
+.quick-links li {
+  margin: 10px 0;
+}
+
+.quick-links a {
+  text-decoration: none;
+  color: #007bff;
+  font-weight: bold;
+}
+
+.recent-activity {
+  margin-bottom: 30px;
+}
+
+.recent-activity h3 {
+  margin-bottom: 15px;
+}
+
+.recent-activity ul {
+  list-style: none;
+  padding: 0;
+}
+
+.recent-activity li {
+  margin: 5px 0;
+}
+
+.alerts {
+  margin-top: 20px;
+}
+
+.alerts h3 {
+  margin-bottom: 15px;
+}
+
+.alerts ul {
+  list-style: none;
+  padding: 0;
+}
+
+.alerts li {
+  margin: 10px 0;
+  color: red;
+}

@@ -56,7 +56,8 @@ namespace RBacServer.Data
             // Seed Roles
             modelBuilder.Entity<Role>().HasData(
                 new Role { Id= 1, name = "Admin", Description = "Administrator with full access"},
-                new Role { Id= 2, name = "User",Description = "Regular user with limited access"}
+                new Role { Id= 2, name = "User",Description = "Regular user with limited access"},
+                new Role { Id= 3, name = "Manager",Description = "Manager with access to users in a project"}
             );
 
             // Seed Permissions
@@ -64,7 +65,7 @@ namespace RBacServer.Data
                 new Permission {Id = 1, Name = "CreateUser", Description = "Access to create a user"},
                 new Permission {Id = 2, Name = "DeleteUser", Description = "Access to delete a user"},
                 new Permission {Id = 3, Name = "ViewDashboard", Description = "Access to view dashboard"},
-                new Permission {Id = 4, Name = "EdiUser", Description = "Access to edit user"}
+                new Permission {Id = 4, Name = "EditUser", Description = "Access to edit user"}
             );
 
             // Seed RlePermissions (RoleId, PermissionId)
