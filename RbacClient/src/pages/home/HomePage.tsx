@@ -1,18 +1,19 @@
 import React from "react";
-import NavBar from "../navbar/NavBar";
 import "./HomePage.css";
 import { useSelector } from "react-redux";
 import { type RootState } from "../../store/store";
+import AdminPage from "../admin/AdminPage";
+import ManagerPage from "../manager/ManagerPage";
+import UserPage from "../user/UserPage";
 
 const HomePage: React.FC = () => {
   const user = useSelector((state: RootState) => state.user.user);
 
   return (
     <div className="home-container">
-      <NavBar />
-      <p>
-        Welcome to the home page, {user?.firstName} {user?.lastName}!!
-      </p>
+      {user?.roles.some((role) => role.name === "Admin") && <AdminPage />}
+      {user?.roles.some((role) => role.name === "Manager") && <ManagerPage />}
+      {user?.roles.some((role) => role.name === "User") && <UserPage />}
     </div>
   );
 };

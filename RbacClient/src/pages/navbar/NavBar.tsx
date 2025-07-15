@@ -3,14 +3,12 @@ import { Link } from "react-router-dom";
 import "./NavBar.css";
 import { useDispatch } from "react-redux";
 import { logout } from "../../features/userSlice";
+import { useSelector } from "react-redux";
+import { type RootState } from "../../store/store";
 
 const NavBar: React.FC = () => {
   const dispatch = useDispatch();
-  // Temporary mock user object (replace later with API response)
-  const user = {
-    username: "Mikko",
-    role: "Admin", // Try "User" or "Manager" for testing other roles
-  };
+  const user = useSelector((state: RootState) => state.user.user);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -21,25 +19,25 @@ const NavBar: React.FC = () => {
   return (
     <nav className="navbar">
       <Link to="/Home">Home</Link>
-      <Link to="/Home">Dashboard</Link>
-      {user.role === "Admin" && (
+      {user?.roles.some((role) => role.name === "Admin") && (
         <>
-          <Link to="/Home">Users</Link>
-          <Link to="/Home">Roles</Link>
-          <Link to="/Home">Audit Logs</Link>
+          <Link to="/users">Users</Link>
+          <Link to="/roles">Roles</Link>
+          <Link to="/permissions">Permissions</Link>
+          <Link to="/logs">Logs</Link>
         </>
       )}
-      {user.role === "Manager" && (
+      {user?.roles.some((role) => role.name === "Manager") && (
         <>
           <Link to="/Home">Reports</Link>
         </>
       )}
-      {user.role === "User" && (
+      {user?.roles.some((role) => role.name === "User") && (
         <>
           <Link to="/Home">My Tasks</Link>
         </>
       )}
-      <Link to="/Home">Profile</Link>
+      <Link to="/Home">Settings</Link>
       <button onClick={handleLogout}>Logout</button>
     </nav>
   );
