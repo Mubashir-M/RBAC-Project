@@ -16,9 +16,18 @@ const initialState: UsersState = {
 
 export const updateUserRole = createAsyncThunk(
   "user/updateUserrole",
-  async ({ userId, newRoleId }: { userId: number; newRoleId: number }) => {
-    await api.put(`api/user/${userId}/role`, {
+  async ({
+    userId,
+    newRoleId,
+    newRoleName,
+  }: {
+    userId: number;
+    newRoleId: number;
+    newRoleName: string;
+  }) => {
+    await api.put(`User/users/${userId}/role`, {
       roleId: newRoleId,
+      name: newRoleName,
     });
     return { userId, newRoleId };
   }

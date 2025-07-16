@@ -16,7 +16,6 @@ const initialState: RoleState = {
 
 export const fetchRoles = createAsyncThunk("roles/fetchRoles", async () => {
   const response = await api.get("Role/roles");
-  console.log("here is roles:", response);
   return response.data;
 });
 

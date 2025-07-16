@@ -101,8 +101,8 @@ namespace RBacServer.Controllers
             return Ok(userList);
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpPut("users/{userId}/role")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateUserRole(int userId, [FromBody] RoleDto dto)
         {
             var role = await _context.Roles.FindAsync(dto.RoleId);
@@ -115,7 +115,7 @@ namespace RBacServer.Controllers
             _context.UserRoles.Add(newUserRole);
             await _context.SaveChangesAsync();
 
-            return Ok(new {message = "Role updated successfuly"});
+            return Ok(new { message = "Role updated successfuly" });
         }
     }
 }

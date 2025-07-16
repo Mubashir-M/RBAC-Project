@@ -1,21 +1,14 @@
-import React, { useEffect } from "react";
+import React from "react";
 import "./AdminPage.css";
-import { useAppDispatch, useAppSelector } from "../../features/hooks";
-import { fetchUsers } from "../../features/usersListSlice";
+import { useAppSelector } from "../../features/hooks";
+
 import { type RootState } from "../../store/store";
 
 const AdminPage: React.FC = () => {
-  const dispatch = useAppDispatch();
   const user = useAppSelector((state: RootState) => state.user);
   const { users, loading, error } = useAppSelector(
     (state: RootState) => state.userList
   );
-
-  useEffect(() => {
-    if (user.user?.roles.some((role) => role.name === "Admin")) {
-      dispatch(fetchUsers());
-    }
-  }, [dispatch, user]);
 
   if (loading) {
     return <div>Loading users...</div>;
