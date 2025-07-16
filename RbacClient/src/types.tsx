@@ -14,7 +14,7 @@ export interface Role {
 }
 
 export interface User {
-  id: number;
+  userId: number;
   username: string;
   firstName: string;
   lastName: string;

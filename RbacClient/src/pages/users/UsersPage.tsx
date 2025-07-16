@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../features/hooks";
 import { type RootState } from "../../store/store";
 import { fetchUsers, updateUserRole } from "../../features/usersListSlice";
-import { fetchRoles } from "../../features/roleSlice";
 
 import "./UsersPage.css";
 
@@ -14,21 +13,6 @@ const UsersPage: React.FC = () => {
   const { users, loading, error } = useAppSelector(
     (state: RootState) => state.userList
   );
-
-  const [hasFetched, setHasFetched] = useState(false);
-
-  useEffect(() => {
-    if (!currentUser.user || hasFetched) return;
-
-    const isAdmin = currentUser.user.roles.some(
-      (role) => role.name === "Admin"
-    );
-    if (!isAdmin) return;
-
-    dispatch(fetchUsers());
-    dispatch(fetchRoles());
-    setHasFetched(true);
-  }, [currentUser.user, hasFetched, dispatch]);
 
   const filteredUsers = users.filter((u) =>
     `${u.username} ${u.firstName} ${u.lastName} ${u.email}`
@@ -51,8 +35,10 @@ const UsersPage: React.FC = () => {
     );
 
     if (!confirmChange) return;
-
-    const resultAction = await dispatch(updateUserRole({ userId, newRoleId }));
+    const newRoleName = selectedRole.name;
+    const resultAction = await dispatch(
+      updateUserRole({ userId, newRoleId, newRoleName })
+    );
 
     if (updateUserRole.fulfilled.match(resultAction)) {
       dispatch(fetchUsers());
@@ -68,8 +54,7 @@ const UsersPage: React.FC = () => {
   if (error) {
     return <div>Error: {error}</div>;
   }
-  console.log("users:", users);
-  console.log("roles:", roles);
+
   return (
     <div className="admin-panel">
       <h1 className="panel-title">Admin Panel</h1>
@@ -105,17 +90,17 @@ const UsersPage: React.FC = () => {
               </tr>
             ) : (
               filteredUsers.map((user) => (
-                <tr key={`${user.id}-${user.username}`}>
+                <tr key={`${user.userId}-${user.username}`}>
                   <td>{user.username}</td>
                   <td>{user.firstName}</td>
                   <td>{user.lastName}</td>
                   <td>{user.email}</td>
                   <td>
                     <select
-                      value={user.roles[0].roleId}
+                      value={user.roles[0].roleId || ""}
                       onChange={(e) =>
                         handleRoleChange(
-                          user.id,
+                          user.userId,
                           Number(e.target.value),
                           user.username,
                           user.roles[0]?.name
