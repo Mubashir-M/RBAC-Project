@@ -18,12 +18,17 @@ namespace RBacServer.Data
         public DbSet<Permission> Permissions { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }
+        
+        public DbSet<Event> Events { get; set; }
+        public DbSet<Project> Projects { get; set; }
+        public DbSet<ProjectParticipant> ProjectParticipants { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-        
+
             base.OnModelCreating(modelBuilder);
-        
+
             // Configure UserRole Many-to-Many
             modelBuilder.Entity<UserRole>()
             .HasKey(ur => new { ur.UserId, ur.RoleId });
@@ -52,29 +57,62 @@ namespace RBacServer.Data
             .WithMany(p => p.RolePermissions)
             .HasForeignKey(rp => rp.PermissionId);
 
+            // Configure Event (One-to-Many with User)
+            modelBuilder.Entity<Event>()
+            .HasOne(e => e.User)
+            .WithMany(u => u.Events)
+            .HasForeignKey(e => e.UserId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure Project (One-to-Many with CreatorUser)
+            modelBuilder.Entity<Project>()
+            .HasOne(p => p.CreatorUser)
+            .WithMany(u => u.Projects)
+            .HasForeignKey(p => p.CreatorUserId)
+            .IsRequired();
+
+            // Configure ProjectParticipant Many-to-Many (Project and User)
+            modelBuilder.Entity<ProjectParticipant>()
+            .HasKey(pp => new { pp.ProjectId, pp.UserId }); // Composite primary key
+
+            // ProjectParticipant has one Project
+            modelBuilder.Entity<ProjectParticipant>()
+            .HasOne(pp => pp.Project)
+            .WithMany(p => p.ProjectParticipants)
+            .HasForeignKey(pp => pp.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+            // ProjectParticipant has one User
+            modelBuilder.Entity<ProjectParticipant>()
+            .HasOne(pp => pp.User)
+            .WithMany(u => u.ProjectParticipants)
+            .HasForeignKey(pp => pp.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
             // Seed Roles
             modelBuilder.Entity<Role>().HasData(
-                new Role { Id= 1, name = "Admin", Description = "Administrator with full access"},
-                new Role { Id= 2, name = "User",Description = "Regular user with limited access"},
-                new Role { Id= 3, name = "Manager",Description = "Manager with access to users in a project"}
+                new Role { Id = 1, name = "Admin", Description = "Administrator with full access" },
+                new Role { Id = 2, name = "User", Description = "Regular user with limited access" },
+                new Role { Id = 3, name = "Manager", Description = "Manager with access to users in a project" },
+                new Role { Id = 4, name = "Pending", Description = "User has not been assigned a role" }
             );
 
             // Seed Permissions
             modelBuilder.Entity<Permission>().HasData(
-                new Permission {Id = 1, Name = "CreateUser", Description = "Access to create a user"},
-                new Permission {Id = 2, Name = "DeleteUser", Description = "Access to delete a user"},
-                new Permission {Id = 3, Name = "ViewDashboard", Description = "Access to view dashboard"},
-                new Permission {Id = 4, Name = "EditUser", Description = "Access to edit user"}
+                new Permission { Id = 1, Name = "CreateUser", Description = "Access to create a user" },
+                new Permission { Id = 2, Name = "DeleteUser", Description = "Access to delete a user" },
+                new Permission { Id = 3, Name = "ViewDashboard", Description = "Access to view dashboard" },
+                new Permission { Id = 4, Name = "EditUser", Description = "Access to edit user" }
             );
 
             // Seed RlePermissions (RoleId, PermissionId)
             modelBuilder.Entity<RolePermission>().HasData(
-                new RolePermission {RoleId = 1, PermissionId = 1},
-                new RolePermission {RoleId = 1, PermissionId = 2},
-                new RolePermission {RoleId = 1, PermissionId = 3},
-                new RolePermission {RoleId = 1, PermissionId = 4},
-                new RolePermission {RoleId = 2, PermissionId = 4}
+                new RolePermission { RoleId = 1, PermissionId = 1 },
+                new RolePermission { RoleId = 1, PermissionId = 2 },
+                new RolePermission { RoleId = 1, PermissionId = 3 },
+                new RolePermission { RoleId = 1, PermissionId = 4 },
+                new RolePermission { RoleId = 2, PermissionId = 4 }
             );
         }
     }

@@ -1,7 +1,7 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import "./AdminPage.css";
 import { useAppSelector } from "../../features/hooks";
-
 import { type RootState } from "../../store/store";
 
 const AdminPage: React.FC = () => {
@@ -36,7 +36,10 @@ const AdminPage: React.FC = () => {
         </div>
         <div className="card">
           <h3>Pending Approvals</h3>
-          <p>5(hard coded)</p> {/* Placeholder, replace with actual data */}
+          <p>
+            {users.filter((user) => user.roles[0].name == "Pending").length}
+          </p>{" "}
+          {/* Placeholder, replace with actual data */}
         </div>
       </div>
 
@@ -45,16 +48,13 @@ const AdminPage: React.FC = () => {
         <h3>Quick Links</h3>
         <ul>
           <li>
-            <a href="/users">Manage Users</a>
+            <Link to="/users">Manage Users</Link>
           </li>
           <li>
-            <a href="/roles">Manage Roles</a>
+            <Link to="/roles">Manage Roles</Link>
           </li>
           <li>
-            <a href="/reports">View Reports</a>
-          </li>
-          <li>
-            <a href="/logs">System Logs</a>
+            <Link to="/logs">System Logs</Link>
           </li>
         </ul>
       </div>

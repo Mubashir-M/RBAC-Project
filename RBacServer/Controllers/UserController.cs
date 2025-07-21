@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,6 +10,7 @@ using RBacServer.Data;
 using RBacServer.DTOs;
 using RBacServer.Models;
 using RBacServer.Models.DTOs;
+using RBacServer.Services;
 
 namespace RBacServer.Controllers
 {
@@ -18,11 +20,13 @@ namespace RBacServer.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly TokenService _tokenService;
+        private readonly EventLoggerService _eventLogger;
 
-        public UserController(ApplicationDbContext context, TokenService tokenService)
+        public UserController(ApplicationDbContext context, TokenService tokenService, EventLoggerService eventLogger)
         {
             _context = context;
             _tokenService = tokenService;
+            _eventLogger = eventLogger;
         }
 
 
@@ -105,17 +109,72 @@ namespace RBacServer.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateUserRole(int userId, [FromBody] RoleDto dto)
         {
-            var role = await _context.Roles.FindAsync(dto.RoleId);
-            if (role == null) return BadRequest(new { error = "Invalid roleId" });
+            // 1. Get details of the Admin performing the action
+            var adminUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            var adminUsernameClaim = User.FindFirst(ClaimTypes.Name);
 
+            if (adminUserIdClaim == null || !int.TryParse(adminUserIdClaim.Value, out int adminUserId))
+            {
+                return Unauthorized("Admin user identity not found.");
+            }
+            var adminUsername = adminUsernameClaim?.Value ?? "Unknown Admin";
+
+
+            // 2. Get details of the TARGET user (the user whose role is being updated)
+            var targetUser = await _context.Users
+                                    .Include(u => u.UserRoles)
+                                        .ThenInclude(ur => ur.Role)
+                                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (targetUser == null)
+            {
+                return NotFound($"User with ID {userId} not found.");
+            }
+
+            // Store old role name for logging
+            var oldRoleName = targetUser.UserRoles.FirstOrDefault()?.Role?.name ?? "No Role";
+
+
+            // 3. Find the new role
+            var newRole = await _context.Roles.FindAsync(dto.RoleId);
+            if (newRole == null)
+            {
+                // Log the failed attempt to assign an invalid role
+                await _eventLogger.LogEvent(
+                    EventType.RoleUpdated,
+                    $"Admin '{adminUsername}' attempted to update role for user '{targetUser.Username}' to an invalid role ID: {dto.RoleId}.",
+                    adminUserId,
+                    adminUsername,
+                    targetUser.Id,
+                    targetUser.Username
+                );
+                return BadRequest(new { error = "Invalid roleId" });
+            }
+
+
+            // 4. Perform the role update logic
             var userRole = await _context.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == userId);
-            if (userRole != null) _context.UserRoles.Remove(userRole);
+            if (userRole != null)
+            {
+                _context.UserRoles.Remove(userRole);
+            }
 
             var newUserRole = new UserRole { UserId = userId, RoleId = dto.RoleId };
             _context.UserRoles.Add(newUserRole);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Role updated successfuly" });
+
+            // 5. Log the successful role update event
+            await _eventLogger.LogEvent(
+                EventType.RoleUpdated,
+                $"Admin '{adminUsername}' updated role for user '{targetUser.Username}' from '{oldRoleName}' to '{newRole.name}'.",
+                adminUserId,
+                adminUsername,
+                targetUser.Id,
+                targetUser.Username
+            );
+
+            return Ok(new { message = "Role updated successfully" });
         }
     }
 }

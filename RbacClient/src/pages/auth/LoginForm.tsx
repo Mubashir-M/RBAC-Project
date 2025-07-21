@@ -51,6 +51,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onRegisterClick }) => {
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Username"
             required
+            autoComplete="username"
           />
         </div>
         <div className="form-group">
@@ -61,6 +62,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onRegisterClick }) => {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="password"
             required
+            autoComplete="current-password"
           />
         </div>
         {error && <p className="error-message">{error}</p>}

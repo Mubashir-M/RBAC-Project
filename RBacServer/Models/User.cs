@@ -55,5 +55,8 @@ namespace RBacServer.Models
 
         // Navigation property for roles
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+        public ICollection<Event> Events { get; set; } = new List<Event>();
+        public ICollection<Project> Projects { get; set; } = new List<Project>();
+        public ICollection<ProjectParticipant> ProjectParticipants { get; set; } = new List<ProjectParticipant>();
     }
 }

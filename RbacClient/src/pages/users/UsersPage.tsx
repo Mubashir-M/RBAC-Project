@@ -8,7 +8,6 @@ import "./UsersPage.css";
 const UsersPage: React.FC = () => {
   const [search, setSearch] = useState("");
   const dispatch = useAppDispatch();
-  const currentUser = useAppSelector((state: RootState) => state.user);
   const roles = useAppSelector((state: RootState) => state.roles.roles);
   const { users, loading, error } = useAppSelector(
     (state: RootState) => state.userList
@@ -40,10 +39,14 @@ const UsersPage: React.FC = () => {
       updateUserRole({ userId, newRoleId, newRoleName })
     );
 
-    if (updateUserRole.fulfilled.match(resultAction)) {
+    if (updateUserRole.rejected.match(resultAction)) {
+      console.error("Failed to update user role:", resultAction.payload);
+      alert(
+        `Failed to update user role: ${resultAction.error || "Unknown error"}`
+      );
+      // The optimistic update rollback logic is in the slice
+      console.log("Re-fetching users from UsersPage due to failed update.");
       dispatch(fetchUsers());
-    } else {
-      console.error("Failed to update user role");
     }
   };
 
@@ -57,11 +60,6 @@ const UsersPage: React.FC = () => {
 
   return (
     <div className="admin-panel">
-      <h1 className="panel-title">Admin Panel</h1>
-      <h2 className="admin-name">
-        Current Admin: <span>{currentUser?.user?.username}</span>
-      </h2>
-
       <input
         type="text"
         placeholder="Search users..."
