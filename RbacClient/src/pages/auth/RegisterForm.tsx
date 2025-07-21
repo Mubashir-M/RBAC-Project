@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-// No need to import Login.css directly here as it's handled by AuthPage.tsx
-// if these classes are global and imported there.
+import api from "../../api/axios";
 
 interface RegisterFormProps {
   onLoginClick: () => void; // Function to call when "Login here!" is clicked
@@ -35,29 +34,25 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onLoginClick }) => {
     // In a real application, you'd send this data to your backend API
     // For example, using fetch or axios:
     try {
-      const response = await fetch("/api/register", {
-        // Replace with your actual backend endpoint
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          username, // Include username
-          email,
-          password, // Send plain password, backend hashes it
-          // You don't send PasswordHash or PasswordHSalt from client
-        }),
+      await api.post("auth/register", {
+        firstName,
+        lastName,
+        username,
+        email,
+        password,
       });
 
-      if (response.ok) {
-        alert("Registration successful! Please log in.");
-        onLoginClick(); // Navigate back to login form on success
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Registration failed. Please try again.");
-      }
+      // --- RESET FORM FIELDS HERE ---
+      setFirstName("");
+      setLastName("");
+      setUsername("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+      setError(""); // Also clear any previous error message
+
+      alert("Registration successful! Please log in.");
+      onLoginClick();
     } catch (err) {
       console.error("Registration API error:", err);
       setError("Network error or server unavailable.");
@@ -80,6 +75,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onLoginClick }) => {
             onChange={(e) => setFirstName(e.target.value)}
             required
             maxLength={50} // Max length as per your model
+            autoComplete="given-name"
           />
         </div>
 
@@ -93,6 +89,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onLoginClick }) => {
             onChange={(e) => setLastName(e.target.value)}
             required
             maxLength={50} // Max length as per your model
+            autoComplete="family-name"
           />
         </div>
 
@@ -107,6 +104,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onLoginClick }) => {
             required
             minLength={8} // Min length as per your model
             maxLength={50} // Max length as per your model
+            autoComplete="username"
           />
         </div>
 
@@ -120,6 +118,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onLoginClick }) => {
             onChange={(e) => setEmail(e.target.value)}
             required
             maxLength={100} // Max length as per your model
+            autoComplete="email"
           />
         </div>
 
@@ -132,8 +131,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onLoginClick }) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            // Add min/max length as per your backend password policy
-            // For example: minLength={8} maxLength={255}
+            autoComplete="new-password"
           />
         </div>
 
@@ -146,6 +144,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onLoginClick }) => {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
+            autoComplete="new-password"
           />
         </div>
 

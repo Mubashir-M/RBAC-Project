@@ -5,6 +5,8 @@ import { useAppDispatch, useAppSelector } from "../../features/hooks";
 import { type RootState } from "../../store/store";
 import { fetchUsers } from "../../features/usersListSlice";
 import { fetchRoles } from "../../features/roleSlice";
+import NavBar from "../navbar/NavBar";
+import "./DashboardLayout.css";
 
 const DashboardLayout: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -17,20 +19,19 @@ const DashboardLayout: React.FC = () => {
     if (currentUser.user?.roles.some((role) => role.name === "Admin")) {
       // Fetch users only if the users list is empty (initial load)
       if (users.length === 0) {
-        console.log("DashboardLayout: Dispatching initial fetchUsers.");
         dispatch(fetchUsers());
       }
       // Fetch roles only if the roles list is empty (initial load)
       if (roles.length === 0) {
-        console.log("DashboardLayout: Dispatching initial fetchRoles.");
         dispatch(fetchRoles());
       }
     }
   }, [dispatch, currentUser.user, users.length, roles.length]);
 
   return (
-    <div>
+    <div className="page-content">
       {/* Your dashboard navigation, sidebar, etc. */}
+      <NavBar />
       <Outlet />{" "}
       {/* This renders the nested routes like UsersPage, AdminPage */}
     </div>

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Navigate, Routes, Route } from "react-router-dom";
 import "./App.css";
 import AuthPage from "./pages/auth/AuthPage";
 import HomePage from "./pages/home/HomePage";
@@ -32,26 +32,43 @@ function App() {
 
   const isLogged = !!token;
 
-  if (!isLogged) {
-    return <AuthPage />;
-  }
-
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Protected routes */}
-        {isLogged && (
-          <Route element={<DashboardLayout />}>
-            <Route path="/home" element={<HomePage />} />
-            <Route path="/users" element={<UsersPage />} />
-            <Route path="/roles" element={<RolesPage />} />
-            <Route path="/permissions" element={<PermissionsPage />} />
-            <Route path="/logs" element={<LogsPage />} />
-            {/* Add more routes as needed */}
-          </Route>
-        )}
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      {/* Public/Auth Route */}
+      <Route
+        path="/auth"
+        element={isLogged ? <Navigate to="/home" replace /> : <AuthPage />}
+      />
+
+      {/* Redirect root to /auth if not logged in, or /home if logged in */}
+      <Route
+        path="/"
+        element={
+          isLogged ? (
+            <Navigate to="/home" replace />
+          ) : (
+            <Navigate to="/auth" replace />
+          )
+        }
+      />
+
+      {/* Protected routes (rendered only if isLogged is true) */}
+      {isLogged ? (
+        <Route element={<DashboardLayout />}>
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/users" element={<UsersPage />} />
+          <Route path="/roles" element={<RolesPage />} />
+          <Route path="/permissions" element={<PermissionsPage />} />
+          <Route path="/logs" element={<LogsPage />} />
+          {/* Add more routes as needed */}
+          {/* Catch-all for logged-in users if they hit an unknown protected route */}
+          <Route path="*" element={<Navigate to="/home" replace />} />
+        </Route>
+      ) : (
+        // Catch-all for non-logged-in users if they try to access protected routes directly
+        <Route path="*" element={<Navigate to="/auth" replace />} />
+      )}
+    </Routes>
   );
 }
 
