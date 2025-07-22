@@ -16,6 +16,13 @@ builder.Configuration.AddEnvironmentVariables();
 // Add services to the container.
 builder.Services.AddControllers(); // API controllers
 
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    });
+
 // Add Swagger
 builder.Services.AddSwaggerGen(options =>
 {

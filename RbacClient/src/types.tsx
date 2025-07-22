@@ -22,3 +22,24 @@ export interface User {
   isActive: boolean;
   roles: Role[];
 }
+
+export type EventType =
+  | "UserCreated"
+  | "LoginSuccess"
+  | "UserUpdated"
+  | "UserDeleted"
+  | "RoleAssigned"
+  | "RoleUpdated"
+  | "SystemError";
+
+export interface Event {
+  eventId: string;
+  type: EventType;
+  timestamp: string;
+  description: string;
+  userId: number | null;
+  username: string | null;
+  sourceIPAddress: string | null;
+  affectedEntityId: number | null;
+  affectedEntityName: string;
+}

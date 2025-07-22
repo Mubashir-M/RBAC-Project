@@ -8,13 +8,14 @@ import DashboardLayout from "./pages/dashboard/DashboardLayout";
 import UsersPage from "./pages/users/UsersPage";
 import RolesPage from "./pages/roles/RolesPage";
 import { type RootState } from "./store/store";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setCredentials } from "./features/userSlice";
 
 function App() {
   const token = useSelector((state: RootState) => state.user.token);
   const dispatch = useDispatch();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const tokenInStorage = localStorage.getItem("token");
@@ -28,9 +29,11 @@ function App() {
         })
       );
     }
+    setTimeout(() => setLoading(false), 0);
   }, [dispatch, token]);
 
   const isLogged = !!token;
+  if (loading) return <div>Loading token</div>;
 
   return (
     <Routes>
