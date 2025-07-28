@@ -13,15 +13,15 @@ namespace RBacServer.Data
             : base(options)
         {        
         } 
-        public DbSet<User> Users { get; set; }
-        public DbSet<Role> Roles { get; set; }
-        public DbSet<Permission> Permissions { get; set; }
-        public DbSet<UserRole> UserRoles { get; set; }
-        public DbSet<RolePermission> RolePermissions { get; set; }
+        public virtual DbSet<User> Users { get; set; }
+        public virtual DbSet<Role> Roles { get; set; }
+        public virtual DbSet<Permission> Permissions { get; set; }
+        public virtual DbSet<UserRole> UserRoles { get; set; }
+        public virtual DbSet<RolePermission> RolePermissions { get; set; }
         
-        public DbSet<Event> Events { get; set; }
-        public DbSet<Project> Projects { get; set; }
-        public DbSet<ProjectParticipant> ProjectParticipants { get; set; }
+        public virtual DbSet<Event> Events { get; set; }
+        public virtual DbSet<Project> Projects { get; set; }
+        public virtual DbSet<ProjectParticipant> ProjectParticipants { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

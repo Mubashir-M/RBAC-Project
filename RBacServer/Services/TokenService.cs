@@ -18,7 +18,7 @@ public class TokenService
         _context = context;
     }
 
-   public string CreateToken(User user)
+   public virtual string CreateToken(User user)
     {
         var claims = new List<Claim>
         {
