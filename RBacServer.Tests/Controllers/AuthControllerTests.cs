@@ -272,7 +272,41 @@ namespace RBacServer.Tests.Controllers
 
             Assert.Null(await _context.Users.FirstOrDefaultAsync(u => u.Username == registerDto.Username));
             _mockEventLogger.Verify(el => el.LogEvent(It.IsAny<EventType>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>()), Times.Never);
-        
+
+        }
+
+        [Fact]
+        public async Task Register_PendingRoleNotFound_ReturnsInternalServerError()
+        {
+            var registerDto = new RegisterDto
+            {
+                Username = "userWithoutRole",
+                Email = "userWithoutRole@example.com",
+                Password = "Password123!",
+                FirstName = "No",
+                LastName = "Role"
+            };
+
+            var pendingRole = _context.Roles.FirstOrDefault(r => r.name == "Pending");
+
+            if (pendingRole != null)
+            {
+                _context.Roles.Remove(pendingRole);
+                _context.SaveChanges();
+
+            }
+
+            var result = await _controller.Register(registerDto);
+
+            var statusCodeResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(500, statusCodeResult.StatusCode);
+            Assert.Equal("Default role not found.", statusCodeResult.Value);
+
+            var addedUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == registerDto.Username);
+            Assert.NotNull(addedUser);
+            Assert.Null(await _context.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == addedUser.Id));
+
+            _mockEventLogger.Verify(el => el.LogEvent(It.IsAny<EventType>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>()), Times.Never);
         }
     }
 }
