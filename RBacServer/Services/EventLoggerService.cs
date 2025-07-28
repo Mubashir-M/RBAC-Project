@@ -18,7 +18,7 @@ namespace RBacServer.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task LogEvent(
+        public virtual async Task LogEvent(
             EventType type,
             string description,
             int? userId,
