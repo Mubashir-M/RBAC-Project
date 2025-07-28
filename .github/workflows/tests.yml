@@ -19,7 +19,10 @@ jobs:
           dotnet-version: "9.0.x"
 
       - name: Restore dependencies
-        run: dotnet build RBacServer --no-restore
+        run: dotnet restore ./RBacServer/RBacServer.csproj
+
+      - name: Build the project
+        run: dotnet build ./RBacServer/RBacServer.csproj --configuration Release
 
       - name: Run tests
-        run: dotnet test RBacServer --no-build --verbosity normal
+        run: dotnet test ./RBacServer/RBacServer.csproj --configuration Release --no-build
