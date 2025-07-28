@@ -19,7 +19,7 @@ jobs:
           dotnet-version: "9.0.x"
 
       - name: Restore dependencies
-        run: dotnet build RBavServer --no-restore
+        run: dotnet build RBacServer --no-restore
 
       - name: Run tests
         run: dotnet test RBacServer --no-build --verbosity normal
