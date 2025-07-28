@@ -22,4 +22,4 @@ jobs:
         run: dotnet build RBavServer --no-restore
 
       - name: Run tests
-        run: dotnet test RBavServer --no-build --verbosity normal
+        run: dotnet test RBacServer --no-build --verbosity normal
