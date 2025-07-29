@@ -95,6 +95,7 @@ namespace RBacServer.Controllers
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
             {
+                
                 Console.WriteLine($"[Login] User not found: {dto.Username}");
                 return Unauthorized("Invalid credentials.");
             }
@@ -115,26 +116,26 @@ namespace RBacServer.Controllers
                 user.Username
             );
 
-            return Ok(new
+            return Ok(new LoginResponseDto
             {
                 token = jwtToken,
-                user = new
+                user = new UserDto
                 {
-                    user.Id,
-                    user.Username,
-                    user.Email,
-                    user.FirstName,
-                    user.LastName,
-                    Roles = user.UserRoles.Select(ur => new
+                    Id = user.Id,
+                    Username = user.Username,
+                    Email = user.Email,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Roles = user.UserRoles.Select(ur => new LoginRoleDto
                     {
-                        ur.Role.Id,
-                        ur.Role.name,
-                        Permissions = ur.Role.RolePermissions.Select(rp => new
+                        Id = ur.Role.Id,
+                        Name = ur.Role.name,
+                        Permissions = ur.Role.RolePermissions.Select(rp => new PermissionDto
                         {
-                            rp.Permission.Id,
-                            rp.Permission.Name
-                        })
-                    })
+                            Id = rp.Permission.Id,
+                            Name = rp.Permission.Name
+                        }).ToList()
+                    }).ToList()
                 }
             });
         }
