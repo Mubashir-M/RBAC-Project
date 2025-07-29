@@ -11,6 +11,7 @@ namespace RBacServer.Models
     {
         UserCreated,
         LoginSuccess,
+        LoginFailure,
         UserUpdated,
         UserDeleted,
         RoleAssigned,

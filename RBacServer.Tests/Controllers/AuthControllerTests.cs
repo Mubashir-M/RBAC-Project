@@ -147,20 +147,30 @@ namespace RBacServer.Tests.Controllers
             var existingUserSalt = BCrypt.Net.BCrypt.GenerateSalt();
             var existingUser = new User
             {
-                Id = 1, Username = "existinguser", Email = "existing@example.com",
+                Id = 1,
+                Username = "existinguser",
+                Email = "existing@example.com",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(ExistingUserPassword, existingUserSalt), // Use generated salt
                 PasswordHSalt = existingUserSalt,
-                FirstName = "Existing", LastName = "User", CreatedDate = DateTime.UtcNow, IsActive = true
+                FirstName = "Existing",
+                LastName = "User",
+                CreatedDate = DateTime.UtcNow,
+                IsActive = true
             };
             _context.Users.Add(existingUser);
 
             var testUserSalt = BCrypt.Net.BCrypt.GenerateSalt();
             var testUser = new User
             {
-                Id = 2, Username = "testuser", Email = "test@example.com",
+                Id = 2,
+                Username = "testuser",
+                Email = "test@example.com",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(TestUserPassword, testUserSalt), // Use generated salt
                 PasswordHSalt = testUserSalt,
-                FirstName = "Test", LastName = "User", CreatedDate = DateTime.UtcNow, IsActive = true
+                FirstName = "Test",
+                LastName = "User",
+                CreatedDate = DateTime.UtcNow,
+                IsActive = true
             };
             _context.Users.Add(testUser);
             _context.SaveChanges(); // Save users so they get their IDs assigned by EF Core
@@ -296,6 +306,72 @@ namespace RBacServer.Tests.Controllers
             var addedUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == registerDto.Username);
             Assert.NotNull(addedUser);
             Assert.Null(await _context.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == addedUser.Id));
+
+            _mockEventLogger.Verify(el => el.LogEvent(It.IsAny<EventType>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+        }
+        
+        [Fact]
+        public async Task Login_ValidCredentials_ReturnsOkWithTokenAndUser()
+        {
+            var loginDto = new LoginDto { Username = "testuser", Password = "TestPassword" };
+            var expectedToken = "mock_jwt_token_for_testuser";
+
+            _mockTokenService.Setup(ts => ts.CreateToken(
+                It.Is<User>(u => u.Username == loginDto.Username)
+            )).Returns(expectedToken);
+
+            var result = await _controller.Login(loginDto);
+
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnValue = Assert.IsType<LoginResponseDto>(okResult.Value);
+
+            Assert.Equal(expectedToken, returnValue.token);
+            Assert.Equal("testuser", returnValue.user.Username);
+            Assert.Equal("test@example.com", returnValue.user.Email);
+            Assert.Equal(2, returnValue.user.Id);
+
+            Assert.NotNull(returnValue.user.Roles);
+            var rolesList = returnValue.user.Roles.ToList();
+            Assert.Single(rolesList);
+            Assert.Equal("User", rolesList[0].Name);
+
+            var updatedUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Username == loginDto.Username);
+            Assert.NotNull(updatedUser);
+            Assert.NotNull(updatedUser.LastLoginDate);
+
+            _mockEventLogger.Verify(el => el.LogEvent(
+                EventType.LoginSuccess,
+                $"User '{loginDto.Username}' logged in successfully.",
+                It.IsAny<int>(),
+                loginDto.Username,
+                It.IsAny<int>(),
+                loginDto.Username
+            ), Times.Once);
+        }
+
+
+        [Fact]
+        public async Task Login_InvalidUsername_ReturnsUnauthorized()
+        {
+            var loginDto = new LoginDto { Username = "nonexistent", Password = "AnyPassword" };
+
+            var result = await _controller.Login(loginDto);
+
+            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
+            Assert.Equal("Invalid credentials.", unauthorizedResult.Value);
+
+            _mockEventLogger.Verify(el => el.LogEvent(It.IsAny<EventType>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Login_InvalidPassword_ReturnsUnauthorized()
+        {
+            var loginDto = new LoginDto { Username = "testuser", Password = "WrongPassword" };
+
+            var result = await _controller.Login(loginDto);
+
+            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
+            Assert.Equal("Invalid credentials.", unauthorizedResult.Value);
 
             _mockEventLogger.Verify(el => el.LogEvent(It.IsAny<EventType>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>()), Times.Never);
         }

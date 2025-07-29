@@ -1,7 +1,7 @@
 public class LoginResponseDto
 {
     public required string token { get; set; }
-    public required UserDto user { get; set; }
+    public  required UserDto user { get; set; }
 }
 
 public class UserDto
@@ -18,6 +18,7 @@ public class LoginRoleDto
 {
     public required int Id { get; set; }
     public required string Name { get; set; }
+
     public required IEnumerable<PermissionDto> Permissions { get; set; }
 }
 
