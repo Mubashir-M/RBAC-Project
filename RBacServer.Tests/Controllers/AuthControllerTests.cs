@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using RBacServer.DTOs;
 using System.Net;
+using System.Text.Json;
 
 
 public static class DbSetMocking
@@ -117,68 +118,58 @@ namespace RBacServer.Tests.Controllers
 
         private void SeedDataBase()
         {
-            // Clear existing data to ensure a clean state for each test
             _context.Users.RemoveRange(_context.Users);
             _context.Roles.RemoveRange(_context.Roles);
             _context.UserRoles.RemoveRange(_context.UserRoles);
             _context.Permissions.RemoveRange(_context.Permissions);
             _context.RolePermissions.RemoveRange(_context.RolePermissions);
-            _context.SaveChanges();
+            _context.SaveChanges(); // Clear existing data
 
-            // Add roles
             var pendingRole = new Role { Id = 101, name = "Pending", Description = "New User Pending Role" };
             var userRole = new Role { Id = 102, name = "User", Description = "Standard User Role" };
             var adminRole = new Role { Id = 103, name = "Admin", Description = "Administrator Role" };
             _context.Roles.AddRange(pendingRole, userRole, adminRole);
-            _context.SaveChanges();
+            _context.SaveChanges(); // Save roles first, so they have IDs
 
-            // Add permissions (example)
             var viewUsersPermission = new Permission { Id = 1, Name = "ViewUsers" };
             var manageUsersPermission = new Permission { Id = 2, Name = "ManageUsers" };
             _context.Permissions.AddRange(viewUsersPermission, manageUsersPermission);
-            _context.SaveChanges();
+            _context.SaveChanges(); // Save permissions
 
-            // Add role permissions (example: Admin has ManageUsers)
             var adminManageUsers = new RolePermission { RoleId = adminRole.Id, PermissionId = manageUsersPermission.Id };
             _context.RolePermissions.Add(adminManageUsers);
-            _context.SaveChanges();
+            _context.SaveChanges(); // Save role permissions
 
-            // Add users
+            // Define the password string to ensure consistency
+            const string TestUserPassword = "TestPassword";
+            const string ExistingUserPassword = "Password123!";
+
+            var existingUserSalt = BCrypt.Net.BCrypt.GenerateSalt();
             var existingUser = new User
             {
-                Id = 1,
-                Username = "existinguser",
-                Email = "existing@example.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"),
-                PasswordHSalt = BCrypt.Net.BCrypt.GenerateSalt(),
-                FirstName = "Existing",
-                LastName = "User",
-                CreatedDate = DateTime.UtcNow,
-                IsActive = true
+                Id = 1, Username = "existinguser", Email = "existing@example.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(ExistingUserPassword, existingUserSalt), // Use generated salt
+                PasswordHSalt = existingUserSalt,
+                FirstName = "Existing", LastName = "User", CreatedDate = DateTime.UtcNow, IsActive = true
             };
             _context.Users.Add(existingUser);
 
+            var testUserSalt = BCrypt.Net.BCrypt.GenerateSalt();
             var testUser = new User
             {
-                Id = 2,
-                Username = "testuser",
-                Email = "test@example.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword"), // Hash actual password
-                PasswordHSalt = BCrypt.Net.BCrypt.GenerateSalt(),
-                FirstName = "Test",
-                LastName = "User",
-                CreatedDate = DateTime.UtcNow,
-                IsActive = true
+                Id = 2, Username = "testuser", Email = "test@example.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(TestUserPassword, testUserSalt), // Use generated salt
+                PasswordHSalt = testUserSalt,
+                FirstName = "Test", LastName = "User", CreatedDate = DateTime.UtcNow, IsActive = true
             };
             _context.Users.Add(testUser);
-            _context.SaveChanges();
+            _context.SaveChanges(); // Save users so they get their IDs assigned by EF Core
 
-            // Add user roles
             _context.UserRoles.Add(new UserRole { UserId = existingUser.Id, RoleId = userRole.Id });
-            _context.UserRoles.Add(new UserRole { UserId = testUser.Id, RoleId = userRole.Id }); // Test user has 'User' role
-            _context.UserRoles.Add(new UserRole { UserId = existingUser.Id, RoleId = adminRole.Id }); // existinguser is also admin for test
+            _context.UserRoles.Add(new UserRole { UserId = testUser.Id, RoleId = userRole.Id });
+            _context.UserRoles.Add(new UserRole { UserId = existingUser.Id, RoleId = adminRole.Id });
 
-            _context.SaveChanges();
+            _context.SaveChanges(); // Final save for UserRoles
         }
 
         public void Dispose()
@@ -305,6 +296,74 @@ namespace RBacServer.Tests.Controllers
             var addedUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == registerDto.Username);
             Assert.NotNull(addedUser);
             Assert.Null(await _context.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == addedUser.Id));
+
+            _mockEventLogger.Verify(el => el.LogEvent(It.IsAny<EventType>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Login_ValidCredentials_ReturnsOkWithTokenAndUser()
+        {
+            var loginDto = new LoginDto { Username = "testuser", Password = "TestPassword" };
+            var expectedToken = "mock_jwt_token_for_testuser";
+
+            _mockTokenService.Setup(ts => ts.CreateToken(
+                It.Is<User>(u => u.Username == loginDto.Username)
+            )).Returns(expectedToken);
+
+            var result = await _controller.Login(loginDto);
+
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            
+            Assert.NotNull(okResult.Value);
+
+            var returnValue = Assert.IsType<LoginResponseDto>(okResult.Value);
+
+            Assert.Equal(expectedToken, returnValue.token);
+            Assert.Equal("testuser", returnValue.user.Username);
+            Assert.Equal("test@example.com", returnValue.user.Email);
+            Assert.Equal(2, returnValue.user.Id);
+
+            Assert.NotNull(returnValue.user.Roles);
+            var rolesList = returnValue.user.Roles.ToList();
+            Assert.Single(rolesList);
+            Assert.Equal("User", rolesList[0].Name);
+
+            var updatedUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Username == loginDto.Username);
+            Assert.NotNull(updatedUser);
+            Assert.NotNull(updatedUser.LastLoginDate);
+
+            _mockEventLogger.Verify(el => el.LogEvent(
+                EventType.LoginSuccess,
+                $"User '{loginDto.Username}' logged in successfully.",
+                It.IsAny<int>(),
+                loginDto.Username,
+                It.IsAny<int>(),
+                loginDto.Username
+            ), Times.Once);
+        }
+
+        [Fact]
+        public async Task Login_InvalidUsername_ReturnsUnauthorized()
+        {
+            var loginDto = new LoginDto { Username = "nonexistent", Password = "AnyPassword" };
+
+            var result = await _controller.Login(loginDto);
+
+            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
+            Assert.Equal("Invalid credentials.", unauthorizedResult.Value);
+
+            _mockEventLogger.Verify(el => el.LogEvent(It.IsAny<EventType>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Login_InvalidPassword_ReturnsUnauthorized()
+        {
+            var loginDto = new LoginDto { Username = "testuser", Password = "WrongPassword" };
+
+            var result = await _controller.Login(loginDto);
+
+            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
+            Assert.Equal("Invalid credentials.", unauthorizedResult.Value);
 
             _mockEventLogger.Verify(el => el.LogEvent(It.IsAny<EventType>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>()), Times.Never);
         }
