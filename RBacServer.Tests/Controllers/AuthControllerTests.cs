@@ -1,196 +1,30 @@
-using Xunit;
 using Moq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using RBacServer.Controllers;
-using RBacServer.Data;
 using RBacServer.Models;
 using RBacServer.Models.DTOs;
-using RBacServer.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using RBacServer.DTOs;
-using System.Net;
-using System.Text.Json;
-
-
-public static class DbSetMocking
-{
-    public static Mock<DbSet<T>> GetMockDbSet<T>(IQueryable<T> data) where T : class
-    {
-        var mockSet = new Mock<DbSet<T>>();
-        mockSet.As<IQueryable<T>>().Setup(m => m.Provider).Returns(data.Provider);
-        mockSet.As<IQueryable<T>>().Setup(m => m.Expression).Returns(data.Expression);
-        mockSet.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(data.ElementType);
-        mockSet.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-        return mockSet;
-    }
-}
 
 namespace RBacServer.Tests.Controllers
 {
-    public class AuthControllerTests : IDisposable
+    public class AuthControllerTests : ControllerTestBase
     {
-        private ApplicationDbContext _context; // Now a real in-memory context
-        private readonly Mock<TokenService> _mockTokenService;
-        private readonly Mock<EventLoggerService> _mockEventLogger;
         private readonly AuthController _controller;
 
         public AuthControllerTests()
         {
-            // Configure in-memory databse
-            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-                .Options;
-
-            _context = new ApplicationDbContext(options);
-            _context.Database.EnsureCreated();
-
-            // Seed in-memory database with test data
-            SeedDataBase();
-
-            // --- Mocking TokenService and its dependencies ---
-            // 1. Mock IConfiguration
-            var mockConfiguration = new Mock<IConfiguration>();
-            // Setup a dummy JWT Key and Issuer (must match your appsettings/config expectations)
-            mockConfiguration.Setup(c => c["Jwt:Key"]).Returns("supersecretkeythatisatleast32characterslongforsecurity");
-            mockConfiguration.Setup(c => c["Jwt:Issuer"]).Returns("your_rbac_issuer");
-            mockConfiguration.Setup(c => c["Jwt:Audience"]).Returns("your_rbac_audience");
-
-
-            // 2. Mock ApplicationDbContext for TokenService's constructor
-            var mockTokenServiceDbContext = new Mock<ApplicationDbContext>(new DbContextOptions<ApplicationDbContext>());
-
-            // Provide some mock roles for the TokenService to find
-            var tokenServiceRoles = new List<Role>
-            {
-                new Role { Id = 101, name = "Pending", Description = "..." },
-                new Role { Id = 102, name = "User", Description = "..." },
-                new Role { Id = 103, name = "Admin", Description = "..." }
-            }.AsQueryable();
-            var mockTokenServiceRolesDbSet = DbSetMocking.GetMockDbSet(tokenServiceRoles);
-            mockTokenServiceDbContext.Setup(c => c.Roles).Returns(mockTokenServiceRolesDbSet.Object);
-
-
-            // 3. Create the TokenService mock by passing the mocks of its dependencies
-            _mockTokenService = new Mock<TokenService>(
-                mockConfiguration.Object,
-                mockTokenServiceDbContext.Object
-            );
-
-            // Set up what CreateToken should return when called by the controller
-            _mockTokenService.Setup(ts => ts.CreateToken(It.IsAny<User>()))
-                             .Returns("mock_jwt_token_for_user");
-
-
-            // --- Mocking EventLoggerService ---
-            var mockEventLoggerContext = new Mock<ApplicationDbContext>(new DbContextOptions<ApplicationDbContext>());
-
-            // Mock IHttpContextAccessor and its nested properties
-            var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
-            var mockHttpContext = new Mock<HttpContext>();
-            var mockConnection = new Mock<ConnectionInfo>();
-
-            // Setup the IP address that LogEvent tries to access
-            mockConnection.Setup(c => c.RemoteIpAddress).Returns(IPAddress.Parse("127.0.0.1"));
-            mockHttpContext.Setup(c => c.Connection).Returns(mockConnection.Object);
-            mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
-
-            // Create the EventLoggerService mock
-            _mockEventLogger = new Mock<EventLoggerService>(
-                mockEventLoggerContext.Object, // Pass the mocked ApplicationDbContext
-                mockHttpContextAccessor.Object // Pass the mocked IHttpContextAccessor
-            );
-
-            // Instantiate the controller with actual DbContext and mocked services
+            // Instantiate the controller with actual Db_context and mocked services
             _controller = new AuthController(
                 _context,
                 _mockTokenService.Object,
                 _mockEventLogger.Object
             );
-
-
-        }
-
-        private void SeedDataBase()
-        {
-            _context.Users.RemoveRange(_context.Users);
-            _context.Roles.RemoveRange(_context.Roles);
-            _context.UserRoles.RemoveRange(_context.UserRoles);
-            _context.Permissions.RemoveRange(_context.Permissions);
-            _context.RolePermissions.RemoveRange(_context.RolePermissions);
-            _context.SaveChanges(); // Clear existing data
-
-            var pendingRole = new Role { Id = 101, name = "Pending", Description = "New User Pending Role" };
-            var userRole = new Role { Id = 102, name = "User", Description = "Standard User Role" };
-            var adminRole = new Role { Id = 103, name = "Admin", Description = "Administrator Role" };
-            _context.Roles.AddRange(pendingRole, userRole, adminRole);
-            _context.SaveChanges(); // Save roles first, so they have IDs
-
-            var viewUsersPermission = new Permission { Id = 1, Name = "ViewUsers" };
-            var manageUsersPermission = new Permission { Id = 2, Name = "ManageUsers" };
-            _context.Permissions.AddRange(viewUsersPermission, manageUsersPermission);
-            _context.SaveChanges(); // Save permissions
-
-            var adminManageUsers = new RolePermission { RoleId = adminRole.Id, PermissionId = manageUsersPermission.Id };
-            _context.RolePermissions.Add(adminManageUsers);
-            _context.SaveChanges(); // Save role permissions
-
-            // Define the password string to ensure consistency
-            const string TestUserPassword = "TestPassword";
-            const string ExistingUserPassword = "Password123!";
-
-            var existingUserSalt = BCrypt.Net.BCrypt.GenerateSalt();
-            var existingUser = new User
-            {
-                Id = 1,
-                Username = "existinguser",
-                Email = "existing@example.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(ExistingUserPassword, existingUserSalt), // Use generated salt
-                PasswordHSalt = existingUserSalt,
-                FirstName = "Existing",
-                LastName = "User",
-                CreatedDate = DateTime.UtcNow,
-                IsActive = true
-            };
-            _context.Users.Add(existingUser);
-
-            var testUserSalt = BCrypt.Net.BCrypt.GenerateSalt();
-            var testUser = new User
-            {
-                Id = 2,
-                Username = "testuser",
-                Email = "test@example.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(TestUserPassword, testUserSalt), // Use generated salt
-                PasswordHSalt = testUserSalt,
-                FirstName = "Test",
-                LastName = "User",
-                CreatedDate = DateTime.UtcNow,
-                IsActive = true
-            };
-            _context.Users.Add(testUser);
-            _context.SaveChanges(); // Save users so they get their IDs assigned by EF Core
-
-            _context.UserRoles.Add(new UserRole { UserId = existingUser.Id, RoleId = userRole.Id });
-            _context.UserRoles.Add(new UserRole { UserId = testUser.Id, RoleId = userRole.Id });
-            _context.UserRoles.Add(new UserRole { UserId = existingUser.Id, RoleId = adminRole.Id });
-
-            _context.SaveChanges(); // Final save for UserRoles
-        }
-
-        public void Dispose()
-        {
-            _context.Database.EnsureDeleted();
-            _context.Dispose();
         }
 
 
         [Fact]
-        public async Task Register_validData_REturnsOk()
+        public async Task Register_validData_ReturnsOk()
         {
             // Arrange
             var registerDto = new RegisterDto
