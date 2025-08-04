@@ -19,13 +19,11 @@ namespace RBacServer.Controllers
     public class UserController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        private readonly TokenService _tokenService;
         private readonly EventLoggerService _eventLogger;
 
-        public UserController(ApplicationDbContext context, TokenService tokenService, EventLoggerService eventLogger)
+        public UserController(ApplicationDbContext context, EventLoggerService eventLogger)
         {
             _context = context;
-            _tokenService = tokenService;
             _eventLogger = eventLogger;
         }
 
