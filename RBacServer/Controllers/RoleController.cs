@@ -38,5 +38,28 @@ namespace RBacServer.Controllers
             }
 
         }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("roles")]
+        public async Task<IActionResult> CreateRole([FromBody] Role role)
+        {
+            if (role == null)
+            {
+                return BadRequest(new { error = "Role data is required." });
+            }
+
+            role.Id = 0;
+            try
+            {
+                _context.Add(role);
+                await _context.SaveChangesAsync();
+                return CreatedAtAction(nameof(GetRoles), new { id = role.Id }, role);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                return StatusCode(500, new { error = "Internal Server Error", details = ex.Message });
+            }
+        }
     }
 }

@@ -6,6 +6,7 @@
 *.cache
 *.log
 .env
+/RBacServer/rbac.db
 
 # ASP.NET Secrets
 **/Properties/launchSettings.json
