@@ -1,5 +1,5 @@
 // DashboardLayout.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../features/hooks";
 import { type RootState } from "../../store/store";

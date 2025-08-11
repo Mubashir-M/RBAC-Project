@@ -6,11 +6,12 @@ export interface Permission {
 export interface RawRole {
   id: number;
   name: string;
+  description: string;
 }
-
 export interface Role {
   roleId: number;
   name: string;
+  description?: string;
 }
 
 export interface User {
